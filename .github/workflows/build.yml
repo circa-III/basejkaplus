@@ -74,12 +74,12 @@ jobs:
           if-no-files-found: error
 
   ubuntu:
-    name: Ubuntu ${{ matrix.arch }} Release
-    runs-on: ubuntu-22.04
+    name: Linux ${{ matrix.arch }} Release
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86, x86_64]
+        arch: [x86_64]
 
     steps:
       - uses: actions/checkout@v4
@@ -213,7 +213,6 @@ jobs:
         run: |
           7z a -r basejkaplus-dedicated-windows-x86.zip ./basejkaplus-dedicated-windows-x86/* '-x!msvcp*.*' '-x!vcruntime*.*' '-x!concrt*.*'
           7z a -r basejkaplus-dedicated-windows-x86_64.zip ./basejkaplus-dedicated-windows-x86_64/* '-x!msvcp*.*' '-x!vcruntime*.*' '-x!concrt*.*'
-          mv ./basejkaplus-dedicated-linux-x86/* basejkaplus-dedicated-linux-x86.tar.gz
           mv ./basejkaplus-dedicated-linux-x86_64/* basejkaplus-dedicated-linux-x86_64.tar.gz
           mv ./basejkaplus-dedicated-macos-x86_64/* basejkaplus-dedicated-macos-x86_64.tar.gz
           mv ./basejkaplus-dedicated-macos-arm64/* basejkaplus-dedicated-macos-arm64.tar.gz
@@ -244,10 +243,6 @@ jobs:
           - artifact_dir: basejkaplus-dedicated-windows-x86_64
             artifact_name: basejkaplus-dedicated-windows-x86_64.zip
             zip: true
-
-          - artifact_dir: basejkaplus-dedicated-linux-x86
-            artifact_name: basejkaplus-dedicated-linux-x86.tar.gz
-            zip: false
 
           - artifact_dir: basejkaplus-dedicated-linux-x86_64
             artifact_name: basejkaplus-dedicated-linux-x86_64.tar.gz
