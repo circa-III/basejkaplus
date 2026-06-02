@@ -74,14 +74,12 @@ jobs:
           if-no-files-found: error
 
   ubuntu:
-    name: Ubuntu ${{ matrix.arch }} ${{ matrix.build_type }} (${{ matrix.portable }})
+    name: Ubuntu ${{ matrix.arch }} Release
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         arch: [x86, x86_64]
-        build_type: [Debug, Release]
-        portable: [Non-Portable]
 
     steps:
       - uses: actions/checkout@v4
@@ -92,8 +90,17 @@ jobs:
       - name: Create Build Environment
         shell: bash
         run: |
-          apt-get -qq update
-          apt-get install -y cmake build-essential libjpeg-dev libpng-dev zlib1g-dev libsdl2-dev
+          if [ ${{ matrix.arch }} == "x86" ]; then
+            sudo dpkg --add-architecture i386
+            sudo apt-get -qq update
+            sudo apt-get -y install aptitude
+            sudo apt-get -y install gcc-multilib g++-multilib ninja-build
+            sudo apt-get -y install --allow-downgrades libpcre2-8-0:i386 libjpeg-dev:i386 libpng-dev:i386 libcurl4-openssl-dev:i386
+            sudo aptitude -y install libglib2.0-dev:i386 libsdl2-dev:i386
+          else
+            sudo apt-get -qq update
+            sudo apt-get install -y libjpeg-dev libpng-dev zlib1g-dev libsdl2-dev
+          fi
           cmake -E make_directory ${{ github.workspace }}/build
 
       - name: Configure CMake
