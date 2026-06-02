@@ -74,12 +74,12 @@ jobs:
           if-no-files-found: error
 
   ubuntu:
-    name: Ubuntu ${{ matrix.arch }} Release
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x86, x86_64]
+  name: Linux ${{ matrix.arch }} Release
+  runs-on: ubuntu-20.04
+  strategy:
+    fail-fast: false
+    matrix:
+      arch: [x86_64]
 
     steps:
       - uses: actions/checkout@v4
