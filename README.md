@@ -2,7 +2,7 @@
 
 BaseJKA+ is a project based on OpenJK, that aims to add a couple more features for servers while sticking to what makes basejka great: simplicity but still feels vanilla. If you're unfamiliar with OpenJK, [click here](https://github.com/JACoders/OpenJK/blob/master/README.md) to read more about it. The JKHub release page can be found [here](https://jkhub.org/files/file/3243-basejka-server/).
 
-Big shoutout to Smoo, Xycaleth and Raz0r for helping me with basically all of this. I had the features but they showed me how to get it done. 
+Big shoutout to Smoo, Xycaleth and Raz0r for helping me with basically all of this. I had the features but they showed me how to get it done.
 
 # Changes and additions
 1.00
@@ -23,3 +23,6 @@ Big shoutout to Smoo, Xycaleth and Raz0r for helping me with basically all of th
 * Windows dedicated support
 * Project rename to basejkaplus
 * Merged changes from master OpenJK since last release
+
+1.05 - June 01, 2026
+* Merge from latest OpenJK

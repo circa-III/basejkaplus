@@ -46,6 +46,14 @@ if(BuildSPEngine OR BuildJK2SPEngine)
 		"${GSLIncludeDirectory}")
 
 	#    Dependencies
+
+	if (NOT WIN32)
+		# OpenGL
+		find_package(OpenGL REQUIRED)
+		set(SPEngineIncludeDirectories ${SPEngineIncludeDirectories} ${OPENGL_INCLUDE_DIR})
+		set(SPEngineLibraries ${SPEngineLibraries} ${OPENGL_LIBRARIES})
+	endif()
+
 	# OpenAL (is optionally included for Windows)
 	if(MSVC AND NOT WIN64)
 		if(UseInternalOpenAL)
@@ -175,7 +183,7 @@ if(BuildSPEngine OR BuildJK2SPEngine)
 		"${SPDir}/qcommon/z_memman_pc.cpp"
 		"${SPDir}/qcommon/qfiles.h"
 		"${SPDir}/qcommon/qcommon.h"
-		"${SPDir}/qcommon/stv_version.h"
+		"${SPDir}/qcommon/game_version.h"
 		"${SPDir}/qcommon/timing.h"
 		"${SPDir}/qcommon/MiniHeap.h"
 
@@ -190,7 +198,7 @@ if(BuildSPEngine OR BuildJK2SPEngine)
 		)
 	source_group("common" FILES ${SPEngineCommonFiles})
 	set(SPEngineFiles ${SPEngineFiles} ${SPEngineCommonFiles})
-	
+
 	set(SPEngineCommonSafeFiles
 		"${SharedDir}/qcommon/safe/files.cpp"
 		"${SharedDir}/qcommon/safe/files.h"
@@ -325,16 +333,6 @@ if(BuildSPEngine OR BuildJK2SPEngine)
 	source_group("cgame" FILES ${SPEngineCGameFiles})
 	set(SPEngineFiles ${SPEngineFiles} ${SPEngineCGameFiles})
 
-	if(WIN32)
-		set(SPEngineWin32Files
-			"${SPDir}/win32/resource.h"
-			"${SPDir}/win32/winquake.rc"
-			"${SharedDir}/sys/win_manifest.manifest"
-			)
-		source_group("win32" FILES ${SPEngineWin32Files})
-		set(SPEngineFiles ${SPEngineFiles} ${SPEngineWin32Files})
-	endif()
-
 	set(SPEngineSysFiles
 		"${SharedDir}/sys/sys_main.cpp"
 		"${SharedDir}/sys/sys_event.cpp"
@@ -377,14 +375,15 @@ if(BuildSPEngine OR BuildJK2SPEngine)
 
 	# project macro so we can invoke it twice: for jk2 and for ja
 	function(add_sp_project ProjectName Label SPDirName InstallDir Component)
-		if(MakeApplicationBundles)
-			set_source_files_properties(${SPDirName}/macosx/OpenJK.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-			set(SPEngineFiles ${SPEngineFiles} ${SPDirName}/macosx/OpenJK.icns)
-			set_source_files_properties(${SPDirName}/macosx/English.lproj/InfoPlist.strings PROPERTIES MACOSX_PACKAGE_LOCATION Resources/English.lproj)
-			set(SPEngineFiles ${SPEngineFiles} ${SPDirName}/macosx/English.lproj/InfoPlist.strings)
-		endif(MakeApplicationBundles)
-
 		if(WIN32)
+			set(SPEngineWin32Files
+				"${SPDirName}/win32/resource.h"
+				"${SPDirName}/win32/winquake.rc"
+				"${SharedDir}/sys/win_manifest.manifest"
+				)
+			source_group("win32" FILES ${SPEngineWin32Files})
+			set(SPEngineFiles ${SPEngineFiles} ${SPEngineWin32Files})
+			
 			add_executable(${ProjectName} WIN32 ${SPEngineFiles})
 			if(UseInternalSDL2)
 				if(CMAKE_SIZEOF_VOID_P EQUAL 4)
@@ -399,6 +398,11 @@ if(BuildSPEngine OR BuildJK2SPEngine)
 			endif()
 		else(WIN32)
 			if(MakeApplicationBundles)
+				set_source_files_properties(${SPDirName}/macosx/OpenJK.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+				set(SPEngineFiles ${SPEngineFiles} ${SPDirName}/macosx/OpenJK.icns)
+				set_source_files_properties(${SPDirName}/macosx/English.lproj/InfoPlist.strings PROPERTIES MACOSX_PACKAGE_LOCATION Resources/English.lproj)
+				set(SPEngineFiles ${SPEngineFiles} ${SPDirName}/macosx/English.lproj/InfoPlist.strings)
+				
 				add_executable(${ProjectName} MACOSX_BUNDLE ${SPEngineFiles})
 				set_target_properties(${ProjectName} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${SPDirName}/macosx/OpenJKInfo.plist")
 			else(MakeApplicationBundles)

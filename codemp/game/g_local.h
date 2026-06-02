@@ -43,10 +43,6 @@ extern vec3_t gPainPoint;
 
 //==================================================================
 
-// the "gameversion" client command will print this plus compile date
-// OpenJK-Alt by Circa		Version 1.03
-#define	GAMEVERSION	"basejka"
-
 #define SECURITY_LOG "security.log"
 
 #define BODY_QUEUE_SIZE		8
