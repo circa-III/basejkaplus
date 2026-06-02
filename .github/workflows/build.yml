@@ -89,18 +89,10 @@ jobs:
           fetch-tags: true
 
       - name: Create Build Environment
+        shell: bash
         run: |
-          if [ ${{ matrix.arch }} == "x86" ]; then
-            sudo dpkg --add-architecture i386
-            sudo apt-get -qq update
-            sudo apt-get -y install aptitude
-            sudo apt-get -y install gcc-multilib g++-multilib ninja-build
-            sudo apt-get -y install --allow-downgrades libpcre2-8-0:i386 libjpeg-dev:i386 libpng-dev:i386 libcurl4-openssl-dev:i386
-            sudo aptitude -y install libglib2.0-dev:i386 libsdl2-dev:i386
-          else
-            sudo apt-get -qq update
-            sudo apt-get install -y libjpeg-dev libpng-dev zlib1g-dev libsdl2-dev
-          fi
+          apt-get -qq update
+          apt-get install -y cmake build-essential libjpeg-dev libpng-dev zlib1g-dev libsdl2-dev
           cmake -E make_directory ${{ github.workspace }}/build
 
       - name: Configure CMake
