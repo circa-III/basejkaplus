@@ -74,12 +74,21 @@ jobs:
           if-no-files-found: error
 
   ubuntu:
+<<<<<<< HEAD
     name: Linux ${{ matrix.arch }} Release
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
         arch: [x86_64]
+=======
+  name: Linux ${{ matrix.arch }} Release
+  runs-on: ubuntu-20.04
+  strategy:
+    fail-fast: false
+    matrix:
+      arch: [x86_64]
+>>>>>>> a532bb4709b2e658b9f3e5afdaf0d32c99fa1742
 
     steps:
       - uses: actions/checkout@v4
