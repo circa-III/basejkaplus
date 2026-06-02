@@ -1,0 +1,280 @@
+name: build dedicated server
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+      - "docs/*"
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+      - "docs/*"
+  release:
+    types: [published]
+
+jobs:
+  msvc:
+    name: Windows ${{ matrix.arch }} Release
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86, x86_64]
+        include:
+          - arch: x86
+            platform: Win32
+          - arch: x86_64
+            platform: x64
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.3.2
+
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{ github.workspace }}/build
+
+      - name: Configure CMake
+        shell: bash
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          OPTIONS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=bin"
+          OPTIONS+=" -DBuildPortableVersion=OFF"
+          OPTIONS+=" -DBuildSPEngine=OFF -DBuildSPGame=OFF -DBuildSPRdVanilla=OFF"
+          OPTIONS+=" -DBuildMPEngine=OFF -DBuildMPRdVanilla=OFF"
+          OPTIONS+=" -DBuildMPDed=ON -DBuildMPGame=ON"
+          OPTIONS+=" -DBuildMPCGame=OFF -DBuildMPUI=OFF -DBuildMPRend2=OFF"
+          OPTIONS+=" -DBuildJK2SPEngine=OFF -DBuildJK2SPGame=OFF -DBuildJK2SPRdVanilla=OFF"
+          OPTIONS+=" -DBuildTests=OFF"
+          cmake $GITHUB_WORKSPACE -A ${{ matrix.platform }} $OPTIONS
+
+      - name: Build
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cmake --build . --config Release -j $NUMBER_OF_PROCESSORS
+
+      - name: Install
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cmake --install . --config Release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: basejkaplus-dedicated-windows-${{ matrix.arch }}
+          path: ${{ github.workspace }}/build/bin/JediAcademy
+          if-no-files-found: error
+
+  ubuntu:
+    name: Ubuntu ${{ matrix.arch }} Release
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86, x86_64]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Create Build Environment
+        shell: bash
+        run: |
+          if [ ${{ matrix.arch }} == "x86" ]; then
+            sudo dpkg --add-architecture i386
+            sudo apt-get -qq update
+            sudo apt-get -y install aptitude
+            sudo apt-get -y install gcc-multilib g++-multilib ninja-build
+            sudo apt-get -y install --allow-downgrades libpcre2-8-0:i386 libjpeg-dev:i386 libpng-dev:i386 libcurl4-openssl-dev:i386
+            sudo aptitude -y install libglib2.0-dev:i386 libsdl2-dev:i386
+          else
+            sudo apt-get -qq update
+            sudo apt-get install -y libjpeg-dev libpng-dev zlib1g-dev libsdl2-dev
+          fi
+          cmake -E make_directory ${{ github.workspace }}/build
+
+      - name: Configure CMake
+        shell: bash
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          OPTIONS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install"
+          OPTIONS+=" -DUseInternalLibs=OFF -DBuildPortableVersion=OFF"
+          if [ ${{ matrix.arch }} == "x86" ]; then
+            OPTIONS+=" -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchains/linux-i686.cmake"
+          fi
+          OPTIONS+=" -DBuildSPEngine=OFF -DBuildSPGame=OFF -DBuildSPRdVanilla=OFF"
+          OPTIONS+=" -DBuildMPEngine=OFF -DBuildMPRdVanilla=OFF"
+          OPTIONS+=" -DBuildMPDed=ON -DBuildMPGame=ON"
+          OPTIONS+=" -DBuildMPCGame=OFF -DBuildMPUI=OFF -DBuildMPRend2=OFF"
+          OPTIONS+=" -DBuildJK2SPEngine=OFF -DBuildJK2SPGame=OFF -DBuildJK2SPRdVanilla=OFF"
+          OPTIONS+=" -DBuildTests=OFF"
+          cmake $GITHUB_WORKSPACE $OPTIONS
+
+      - name: Build
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cmake --build . -j $(nproc)
+
+      - name: Install
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cmake --install .
+
+      - name: Create archive
+        working-directory: ${{ github.workspace }}/install/JediAcademy
+        shell: bash
+        run: tar -czvf basejkaplus-dedicated-linux-${{ matrix.arch }}.tar.gz *
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: basejkaplus-dedicated-linux-${{ matrix.arch }}
+          path: ${{ github.workspace }}/install/JediAcademy/basejkaplus-dedicated-linux-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+
+  macos:
+    name: macOS ${{ matrix.arch }} Release
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15-intel
+            arch: x86_64
+          - runner: macos-15
+            arch: arm64
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Create Build Environment
+        run: |
+          brew install zlib libjpeg libpng sdl2
+          cmake -E make_directory ${{ github.workspace }}/build
+
+      - name: Configure CMake
+        shell: bash
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          OPTIONS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install"
+          OPTIONS+=" -DUseInternalLibs=OFF -DBuildPortableVersion=OFF"
+          OPTIONS+=" -DBuildSPEngine=OFF -DBuildSPGame=OFF -DBuildSPRdVanilla=OFF"
+          OPTIONS+=" -DBuildMPEngine=OFF -DBuildMPRdVanilla=OFF"
+          OPTIONS+=" -DBuildMPDed=ON -DBuildMPGame=ON"
+          OPTIONS+=" -DBuildMPCGame=OFF -DBuildMPUI=OFF -DBuildMPRend2=OFF"
+          OPTIONS+=" -DBuildJK2SPEngine=OFF -DBuildJK2SPGame=OFF -DBuildJK2SPRdVanilla=OFF"
+          OPTIONS+=" -DBuildTests=OFF"
+          cmake $GITHUB_WORKSPACE $OPTIONS
+
+      - name: Build
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cmake --build . -j $(getconf _NPROCESSORS_ONLN)
+
+      - name: Install
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cmake --install .
+
+      - name: Create archive
+        working-directory: ${{ github.workspace }}/install/JediAcademy
+        shell: bash
+        run: tar -czvf basejkaplus-dedicated-macos-${{ matrix.arch }}.tar.gz *
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: basejkaplus-dedicated-macos-${{ matrix.arch }}
+          path: ${{ github.workspace }}/install/JediAcademy/basejkaplus-dedicated-macos-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+
+  create-latest:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [msvc, ubuntu, macos]
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create binary archives
+        run: |
+          7z a -r basejkaplus-dedicated-windows-x86.zip ./basejkaplus-dedicated-windows-x86/* '-x!msvcp*.*' '-x!vcruntime*.*' '-x!concrt*.*'
+          7z a -r basejkaplus-dedicated-windows-x86_64.zip ./basejkaplus-dedicated-windows-x86_64/* '-x!msvcp*.*' '-x!vcruntime*.*' '-x!concrt*.*'
+          mv ./basejkaplus-dedicated-linux-x86_64/* basejkaplus-dedicated-linux-x86_64.tar.gz
+          mv ./basejkaplus-dedicated-macos-x86_64/* basejkaplus-dedicated-macos-x86_64.tar.gz
+          mv ./basejkaplus-dedicated-macos-arm64/* basejkaplus-dedicated-macos-arm64.tar.gz
+
+      - name: Create latest build
+        uses: marvinpinto/action-automatic-releases@d68defdd11f9dcc7f52f35c1b7c236ee7513bcc1
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: Latest Build
+          files: |
+            *.zip
+            *.tar.gz
+
+  create-release:
+    if: github.event_name == 'release'
+    needs: [msvc, ubuntu, macos]
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        include:
+          - artifact_dir: basejkaplus-dedicated-windows-x86
+            artifact_name: basejkaplus-dedicated-windows-x86.zip
+            zip: true
+
+          - artifact_dir: basejkaplus-dedicated-windows-x86_64
+            artifact_name: basejkaplus-dedicated-windows-x86_64.zip
+            zip: true
+
+          - artifact_dir: basejkaplus-dedicated-linux-x86_64
+            artifact_name: basejkaplus-dedicated-linux-x86_64.tar.gz
+            zip: false
+
+          - artifact_dir: basejkaplus-dedicated-macos-x86_64
+            artifact_name: basejkaplus-dedicated-macos-x86_64.tar.gz
+            zip: false
+
+          - artifact_dir: basejkaplus-dedicated-macos-arm64
+            artifact_name: basejkaplus-dedicated-macos-arm64.tar.gz
+            zip: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create archive
+        run: |
+          if [ "${{ matrix.zip }}" == "true" ]; then
+            7z a -r ${{ matrix.artifact_name }} ./${{ matrix.artifact_dir }}/* '-x!msvcp*.*' '-x!vcruntime*.*' '-x!concrt*.*'
+          else
+            mv ./${{ matrix.artifact_dir }}/* ${{ matrix.artifact_name }}
+          fi
+
+      - name: Upload archives
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          file: ${{ matrix.artifact_name }}
