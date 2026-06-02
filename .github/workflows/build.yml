@@ -74,13 +74,14 @@ jobs:
           if-no-files-found: error
 
   ubuntu:
-    name: Linux ${{ matrix.arch }} Release
+    name: Ubuntu ${{ matrix.arch }} ${{ matrix.build_type }} (${{ matrix.portable }})
     runs-on: ubuntu-22.04
-    container: ubuntu:20.04
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64]
+        arch: [x86, x86_64]
+        build_type: [Debug, Release]
+        portable: [Non-Portable]
 
     steps:
       - uses: actions/checkout@v4
